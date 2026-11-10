@@ -38,13 +38,22 @@ const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const logoutBtn = document.getElementById("logout");
 
-// Path Database untuk GPIO 12, 13, 14
-const gpioPins = ["12", "13", "14"];
+// Elemen DOM untuk Sensor DHT22
+const suhuVal = document.getElementById("suhu-val");
+const kelembapanVal = document.getElementById("kelembapan-val");
+
+// Path Database untuk GPIO 12, 13, 14, dan 25
+const gpioPins = ["12", "13", "14", "25"];
 const dbRefs = {
   12: ref(database, "board1/outputs/digital/12"),
   13: ref(database, "board1/outputs/digital/13"),
   14: ref(database, "board1/outputs/digital/14"),
+  25: ref(database, "board1/outputs/digital/25"),
 };
+
+// Path Database untuk Sensor
+const tempRef = ref(database, "board1/sensor/temperature");
+const humRef = ref(database, "board1/sensor/humidity");
 
 // Event klik tombol ON / OFF
 document.querySelectorAll("input[data-gpio]").forEach((toggle) => {
@@ -70,6 +79,7 @@ const setupUI = (user) => {
     dashboardView.hidden = false;
     userEmailSpan.textContent = user.email;
 
+    // Mendengarkan perubahan status GPIO secara realtime
     gpioPins.forEach((pin) => {
       const stateSpan = document.getElementById(`state-${pin}`);
       const toggle = document.querySelector(`input[data-gpio="${pin}"]`);
@@ -77,13 +87,28 @@ const setupUI = (user) => {
       onValue(dbRefs[pin], (snap) => {
         const isOn = snap.val() === 1;
 
-        stateSpan.textContent = isOn ? "ON" : "OFF";
-
-        stateSpan.classList.toggle("text-emerald-400", isOn);
-        stateSpan.classList.toggle("text-slate-400", !isOn);
-
-        toggle.checked = isOn;
+        if (stateSpan && toggle) {
+          stateSpan.textContent = isOn ? "ON" : "OFF";
+          stateSpan.classList.toggle("text-emerald-400", isOn);
+          stateSpan.classList.toggle("text-slate-400", !isOn);
+          toggle.checked = isOn;
+        }
       });
+    });
+
+    // Mendengarkan perubahan data Sensor secara realtime
+    onValue(tempRef, (snap) => {
+      const suhu = snap.val();
+      if (suhu !== null && suhuVal) {
+        suhuVal.innerText = suhu.toFixed(1);
+      }
+    });
+
+    onValue(humRef, (snap) => {
+      const kelembapan = snap.val();
+      if (kelembapan !== null && kelembapanVal) {
+        kelembapanVal.innerText = kelembapan.toFixed(1);
+      }
     });
   } else {
     loginView.hidden = false;
