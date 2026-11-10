@@ -1,17 +1,28 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
 // Konfigurasi Firebase proyek IoT-NeverMind kamu
 const firebaseConfig = {
   apiKey: "AIzaSyCeWPdjD7KAzCodkua2kGdNb3F7VF5JNn0",
   authDomain: "iot-nevermind.firebaseapp.com",
-  databaseURL: "https://iot-nevermind-default-rtdb.europe-west1.firebasedatabase.app",
+  databaseURL:
+    "https://iot-nevermind-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "iot-nevermind",
   storageBucket: "iot-nevermind.firebasestorage.app",
   messagingSenderId: "871219240095",
   appId: "1:871219240095:web:ae73659f70c067e5b596aa",
-  measurementId: "G-95PFXKZZ2X"
+  measurementId: "G-95PFXKZZ2X",
 };
 
 // Inisialisasi Firebase
@@ -30,17 +41,25 @@ const logoutBtn = document.getElementById("logout");
 // Path Database untuk GPIO 12, 13, 14
 const gpioPins = ["12", "13", "14"];
 const dbRefs = {
-  "12": ref(database, "board1/outputs/digital/12"),
-  "13": ref(database, "board1/outputs/digital/13"),
-  "14": ref(database, "board1/outputs/digital/14")
+  12: ref(database, "board1/outputs/digital/12"),
+  13: ref(database, "board1/outputs/digital/13"),
+  14: ref(database, "board1/outputs/digital/14"),
 };
 
 // Event klik tombol ON / OFF
-document.querySelectorAll("button[data-gpio]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const pin = btn.getAttribute("data-gpio");
-    const val = Number(btn.getAttribute("data-value"));
-    set(dbRefs[pin], val);
+document.querySelectorAll("input[data-gpio]").forEach((toggle) => {
+  toggle.addEventListener("change", async () => {
+    const pin = toggle.getAttribute("data-gpio");
+    const val = toggle.checked ? 1 : 0;
+
+    try {
+      await set(dbRefs[pin], val);
+    } catch (err) {
+      console.error("Gagal mengubah GPIO:", err);
+      alert("Gagal mengubah GPIO. Periksa koneksi Firebase.");
+
+      toggle.checked = !toggle.checked;
+    }
   });
 });
 
@@ -53,8 +72,17 @@ const setupUI = (user) => {
 
     gpioPins.forEach((pin) => {
       const stateSpan = document.getElementById(`state-${pin}`);
+      const toggle = document.querySelector(`input[data-gpio="${pin}"]`);
+
       onValue(dbRefs[pin], (snap) => {
-        stateSpan.textContent = snap.val() === 1 ? "ON" : "OFF";
+        const isOn = snap.val() === 1;
+
+        stateSpan.textContent = isOn ? "ON" : "OFF";
+
+        stateSpan.classList.toggle("text-emerald-400", isOn);
+        stateSpan.classList.toggle("text-slate-400", !isOn);
+
+        toggle.checked = isOn;
       });
     });
   } else {
