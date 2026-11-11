@@ -304,6 +304,106 @@ body[data-theme="classic"] #main-header {
   }
 }
 
+/* ==========================================================================
+   CLASSIC LOGIN VIEW - 100% EXACT ORIGINAL REPLICA
+   ========================================================================== */
+body[data-theme="classic"] #modern-login-brand {
+  display: none !important;
+}
+
+body[data-theme="classic"] #classic-login-title {
+  display: block !important;
+  font-size: 24px !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 25px !important;
+  color: #ffffff !important;
+}
+
+body[data-theme="classic"] #login-card {
+  max-width: 420px !important;
+  margin: 45px auto !important;
+  padding: 32px !important;
+  background: #162237 !important;
+  border: 1px solid #293750 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25) !important;
+}
+
+body[data-theme="classic"] .login-label {
+  display: none !important;
+}
+
+body[data-theme="classic"] .login-field-group {
+  margin-bottom: 0 !important;
+}
+
+body[data-theme="classic"] .login-input {
+  display: block !important;
+  width: 100% !important;
+  padding: 13px !important;
+  margin-bottom: 15px !important;
+  border: 1px solid #293750 !important;
+  border-radius: 9px !important;
+  background: #0b1220 !important;
+  color: white !important;
+  outline: none !important;
+  font-size: 14px !important;
+}
+
+body[data-theme="classic"] .login-input:focus {
+  border-color: #3285ff !important;
+}
+
+body[data-theme="classic"] .login-input::placeholder {
+  color: #91a5c0 !important;
+}
+
+body[data-theme="classic"] #login-submit-btn {
+  width: 100% !important;
+  padding: 11px 20px !important;
+  margin: 5px 0 !important;
+  background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  border: none !important;
+  border-radius: 9px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: 0.2s !important;
+}
+
+body[data-theme="classic"] #login-submit-btn:hover {
+  filter: brightness(1.15) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.3) !important;
+}
+
+body[data-theme="classic"] #modern-login-btn-text {
+  display: none !important;
+}
+
+body[data-theme="classic"] #classic-login-btn-text {
+  display: inline !important;
+}
+
+body[data-theme="classic"] #login-error {
+  color: #ff6577 !important;
+  font-size: 14px !important;
+  text-align: center !important;
+}
+
+@media (max-width: 600px) {
+  body[data-theme="classic"] #login-card {
+    margin: 30px 15px !important;
+    padding: 22px !important;
+  }
+}
+
 /* Hide helper */
 [hidden] {
   display: none !important;

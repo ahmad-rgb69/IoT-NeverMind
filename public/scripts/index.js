@@ -47,32 +47,76 @@ const kelembapanVal = document.getElementById("kelembapan-val");
 const modernSuhuVal = document.getElementById("modern-suhu-val");
 const modernKelembapanVal = document.getElementById("modern-kelembapan-val");
 
-// Path Database untuk GPIO 12, 13, 14, dan 25
+// Active Board State ("board1" atau "board2")
+let currentBoard = "board1";
 const gpioPins = ["12", "13", "14", "25"];
-const dbRefs = {
-  12: ref(database, "board1/outputs/digital/12"),
-  13: ref(database, "board1/outputs/digital/13"),
-  14: ref(database, "board1/outputs/digital/14"),
-  25: ref(database, "board1/outputs/digital/25"),
+
+// Cache status GPIO untuk masing-masing board
+const boardStates = {
+  board1: { 12: 0, 13: 0, 14: 0, 25: 0 },
+  board2: { 12: 0, 13: 0, 14: 0, 25: 0 },
+};
+
+// Fungsi pembantu sinkronisasi UI pin
+function updatePinUI(pin, isOn) {
+  // Update status checkbox (Modern & Classic)
+  document.querySelectorAll(`input[data-gpio="${pin}"]`).forEach((toggle) => {
+    toggle.checked = isOn;
+  });
+
+  // Update badge teks ON / OFF
+  document.querySelectorAll(`.state-${pin}`).forEach((el) => {
+    el.textContent = isOn ? "ON" : "OFF";
+    if (document.body.getAttribute("data-theme") === "classic") {
+      el.className = `state-${pin} font-bold ${isOn ? "text-emerald-400" : "text-slate-400"}`;
+    } else {
+      if (isOn) {
+        el.className = `state-${pin} text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400`;
+      } else {
+        el.className = `state-${pin} text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400`;
+      }
+    }
+  });
+
+  // Update indikator dot GPIO Modern
+  document.querySelectorAll(`.dot-gpio-${pin}`).forEach((dot) => {
+    if (isOn) {
+      dot.className = `gpio-dot dot-gpio-${pin} w-2.5 h-2.5 rounded-full bg-emerald-500 transition-colors`;
+    } else {
+      dot.className = `gpio-dot dot-gpio-${pin} w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors`;
+    }
+  });
+}
+
+// Callback saat tab board diganti oleh user
+window.onBoardTabSwitched = function (boardId) {
+  currentBoard = boardId;
+  gpioPins.forEach((pin) => {
+    const isOn = boardStates[currentBoard][pin] === 1;
+    updatePinUI(pin, isOn);
+  });
 };
 
 // Path Database untuk Sensor
 const tempRef = ref(database, "board1/sensor/temperature");
 const humRef = ref(database, "board1/sensor/humidity");
 
-// Event klik tombol ON / OFF
+// Event klik tombol ON / OFF (menulis ke board aktif)
 document.querySelectorAll("input[data-gpio]").forEach((toggle) => {
   toggle.addEventListener("change", async () => {
     const pin = toggle.getAttribute("data-gpio");
     const val = toggle.checked ? 1 : 0;
+    boardStates[currentBoard][pin] = val;
+    updatePinUI(pin, val === 1);
 
     try {
-      await set(dbRefs[pin], val);
+      const pinRef = ref(database, `${currentBoard}/outputs/digital/${pin}`);
+      await set(pinRef, val);
     } catch (err) {
-      console.error("Gagal mengubah GPIO:", err);
+      console.error(`Gagal mengubah GPIO ${pin} di ${currentBoard}:`, err);
       alert("Gagal mengubah GPIO. Periksa koneksi Firebase.");
-
-      toggle.checked = !toggle.checked;
+      boardStates[currentBoard][pin] = val === 1 ? 0 : 1;
+      updatePinUI(pin, val === 0);
     }
   });
 });
@@ -87,36 +131,38 @@ const setupUI = (user) => {
     if (topUserBanner) topUserBanner.hidden = false;
     if (dropdownLogoutBtn) dropdownLogoutBtn.hidden = false;
 
-    // Mendengarkan perubahan status GPIO secara realtime
-    gpioPins.forEach((pin) => {
-      onValue(dbRefs[pin], (snap) => {
-        const isOn = snap.val() === 1;
+    // Filter tampilan GPIO berdasarkan Role Akun (Tugas 5)
+    const email = user.email ? user.email.toLowerCase() : "";
+    const allowedPins = {
+      "user1@uniska.ac.id": ["12", "13", "14"],
+      "user2@uniska.ac.id": ["25"],
+      "admin@uniska.ac.id": ["12", "13", "14", "25"],
+      "gumishiro2@gmail.com": ["12", "13", "14", "25"],
+    };
 
-        // Sinkronisasi status checkbox (Modern & Classic)
-        document.querySelectorAll(`input[data-gpio="${pin}"]`).forEach((toggle) => {
-          toggle.checked = isOn;
-        });
+    const currentAllowed = allowedPins[email] || ["12", "13", "14", "25"];
 
-        // Sinkronisasi badge teks ON / OFF
-        document.querySelectorAll(`.state-${pin}`).forEach((el) => {
-          el.textContent = isOn ? "ON" : "OFF";
-          if (document.body.getAttribute("data-theme") === "classic") {
-            el.className = `state-${pin} font-bold ${isOn ? "text-emerald-400" : "text-slate-400"}`;
-          } else {
-            if (isOn) {
-              el.className = `state-${pin} text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400`;
-            } else {
-              el.className = `state-${pin} text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400`;
+    ["12", "13", "14", "25"].forEach((pin) => {
+      const show = currentAllowed.includes(pin);
+      document.querySelectorAll(`input[data-gpio="${pin}"]`).forEach((input) => {
+        const row = input.closest(".flex.items-center.justify-between, .classic-card");
+        if (row) {
+          row.style.display = show ? "" : "none";
+        }
+      });
+    });
+
+    // Mendengarkan perubahan status GPIO secara realtime untuk kedua board
+    ["board1", "board2"].forEach((bId) => {
+      gpioPins.forEach((pin) => {
+        const pinRef = ref(database, `${bId}/outputs/digital/${pin}`);
+        onValue(pinRef, (snap) => {
+          const val = snap.val();
+          if (val !== null) {
+            boardStates[bId][pin] = val;
+            if (currentBoard === bId) {
+              updatePinUI(pin, val === 1);
             }
-          }
-        });
-
-        // Sinkronisasi indikator dot GPIO Modern
-        document.querySelectorAll(`.dot-gpio-${pin}`).forEach((dot) => {
-          if (isOn) {
-            dot.className = `gpio-dot dot-gpio-${pin} w-2.5 h-2.5 rounded-full bg-emerald-500 transition-colors`;
-          } else {
-            dot.className = `gpio-dot dot-gpio-${pin} w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors`;
           }
         });
       });

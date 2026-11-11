@@ -20,14 +20,14 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 
-<body data-theme="modern" class="bg-[#09090b] text-[#f4f4f5] min-h-screen antialiased flex flex-col">
+<body data-theme="classic" class="bg-[#0b1220] text-[#e8eef8] min-h-screen antialiased flex flex-col">
 
   <!-- TOP NAVIGATION BAR (Adapts between Modern & Classic) -->
   <header id="main-header" class="sticky top-0 z-50 w-full border-b border-[#27272a] bg-[#09090b]/95 backdrop-blur-md">
 
     <!-- MODERN HEADER CONTENT -->
     <div id="modern-header-content"
-      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4" hidden>
       <!-- LEFT: Brand Logo & Title -->
       <div class="flex items-center gap-3">
         <img src="assets/nevermind-logo.png" alt="Nevermind Logo" class="h-8 w-auto object-contain rounded" />
@@ -62,7 +62,7 @@
     </div>
 
     <!-- CLASSIC HEADER CONTENT (Centered "ESP32 IoT Control" matching screenshot) -->
-    <div id="classic-header-content" class="w-full px-4 sm:px-6 h-16 flex items-center justify-between" hidden>
+    <div id="classic-header-content" class="w-full px-4 sm:px-6 h-16 flex items-center justify-between">
       <!-- Left spacer to ensure center alignment -->
       <div class="w-10"></div>
 
@@ -93,28 +93,28 @@
           </span>
           <span id="current-ui-pill"
             class="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-            MODERN
+            CLASSIC
           </span>
         </div>
 
         <!-- Segmented Radio Group -->
         <div class="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-[#09090b] border border-[#27272a]">
           <label
-            class="ui-radio-label flex items-center justify-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors active text-xs font-medium text-white"
+            class="ui-radio-label flex items-center justify-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors text-xs font-medium text-zinc-400"
             data-mode="modern">
-            <input type="radio" name="ui-theme-mode" value="modern" class="sr-only" checked />
-            <span class="radio-indicator w-3 h-3 rounded-full border border-zinc-500 flex items-center justify-center">
-              <span class="radio-inner-dot w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <input type="radio" name="ui-theme-mode" value="modern" class="sr-only" />
+            <span class="radio-indicator w-3 h-3 rounded-full border border-zinc-600 flex items-center justify-center">
+              <span class="radio-inner-dot w-1.5 h-1.5 rounded-full"></span>
             </span>
             <span>Modern</span>
           </label>
 
           <label
-            class="ui-radio-label flex items-center justify-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors text-xs font-medium text-zinc-400"
+            class="ui-radio-label flex items-center justify-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors active text-xs font-medium text-white"
             data-mode="classic">
-            <input type="radio" name="ui-theme-mode" value="classic" class="sr-only" />
-            <span class="radio-indicator w-3 h-3 rounded-full border border-zinc-600 flex items-center justify-center">
-              <span class="radio-inner-dot w-1.5 h-1.5 rounded-full"></span>
+            <input type="radio" name="ui-theme-mode" value="classic" class="sr-only" checked />
+            <span class="radio-indicator w-3 h-3 rounded-full border border-zinc-500 flex items-center justify-center">
+              <span class="radio-inner-dot w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             </span>
             <span>Classic</span>
           </label>
@@ -138,33 +138,41 @@
 
   <!-- ================= LOGIN VIEW ================= -->
   <section id="login-view" class="flex-1 flex items-center justify-center p-4 py-12">
-    <div class="w-full max-w-sm p-6 sm:p-8 rounded-xl bg-[#18181b] border border-[#27272a] shadow-xl">
-      <div class="text-center mb-6">
+    <div id="login-card" class="w-full max-w-sm p-6 sm:p-8 rounded-xl bg-[#18181b] border border-[#27272a] shadow-xl">
+      
+      <!-- Modern Brand Title -->
+      <div id="modern-login-brand" class="text-center mb-6">
         <img src="assets/nevermind-logo.png" alt="Nevermind Logo" class="h-10 w-auto mx-auto mb-3 object-contain" />
         <h2 class="text-lg font-bold text-[#f4f4f5]">Sign in to Dashboard</h2>
         <p class="text-xs text-[#a1a1aa] mt-1">Manage ESP32 GPIOs and sensors</p>
       </div>
 
+      <!-- Classic Header Title -->
+      <h2 id="classic-login-title" class="text-2xl font-bold text-center text-white mb-6">
+        Login
+      </h2>
+
       <form id="login-form" class="space-y-4">
-        <div>
-          <label for="email" class="block text-xs font-medium text-zinc-300 mb-1.5">
+        <div class="login-field-group">
+          <label for="email" class="login-label block text-xs font-medium text-zinc-300 mb-1.5">
             Email
           </label>
           <input id="email" type="email" placeholder="Email" required
-            class="w-full px-3 py-2 rounded-lg bg-[#09090b] border border-[#27272a] text-sm text-[#f4f4f5] placeholder-zinc-500 outline-none focus:border-zinc-500 transition-colors" />
+            class="login-input w-full px-3 py-2 rounded-lg bg-[#09090b] border border-[#27272a] text-sm text-[#f4f4f5] placeholder-zinc-500 outline-none focus:border-zinc-500 transition-colors" />
         </div>
 
-        <div>
-          <label for="password" class="block text-xs font-medium text-zinc-300 mb-1.5">
+        <div class="login-field-group">
+          <label for="password" class="login-label block text-xs font-medium text-zinc-300 mb-1.5">
             Password
           </label>
           <input id="password" type="password" placeholder="Password" required
-            class="w-full px-3 py-2 rounded-lg bg-[#09090b] border border-[#27272a] text-sm text-[#f4f4f5] placeholder-zinc-500 outline-none focus:border-zinc-500 transition-colors" />
+            class="login-input w-full px-3 py-2 rounded-lg bg-[#09090b] border border-[#27272a] text-sm text-[#f4f4f5] placeholder-zinc-500 outline-none focus:border-zinc-500 transition-colors" />
         </div>
 
-        <button type="submit"
+        <button id="login-submit-btn" type="submit"
           class="w-full py-2 px-4 rounded-lg bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-xs tracking-wide uppercase transition-colors cursor-pointer mt-2">
-          Sign In
+          <span id="modern-login-btn-text">Sign In</span>
+          <span id="classic-login-btn-text">Login</span>
         </button>
 
         <p id="login-error" class="text-center text-xs text-rose-400 min-h-4 pt-1"></p>
@@ -178,7 +186,7 @@
     <!-- ========================================================
            1. MODERN PRODUCTION VIEW (Industrial / shadcn / Vercel style)
            ======================================================== -->
-    <div id="modern-ui-view" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div id="modern-ui-view" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8" hidden>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
@@ -187,12 +195,23 @@
           class="rounded-xl bg-[#18181b] border border-[#27272a] p-5 sm:p-6 shadow-sm flex flex-col justify-between">
 
           <div>
-            <div class="flex items-center justify-between pb-4 mb-5 border-b border-[#27272a]">
+            <div class="flex items-center justify-between pb-4 mb-5 border-b border-[#27272a] gap-2">
               <div>
                 <h2 class="text-lg font-bold text-[#f4f4f5] tracking-tight">GPIO Controls</h2>
                 <p class="text-xs text-[#a1a1aa] mt-0.5">Toggle digital output channels</p>
               </div>
 
+              <!-- Tab Switcher Device 1 / Device 2 -->
+              <div class="flex items-center gap-1 p-1 rounded-lg bg-[#09090b] border border-[#27272a]">
+                <button type="button" id="tab-board1" onclick="switchBoardTab('board1')" 
+                  class="px-2.5 py-1 text-xs font-semibold rounded bg-[#18181b] text-white border border-[#27272a] transition-colors cursor-pointer">
+                  Board 1
+                </button>
+                <button type="button" id="tab-board2" onclick="switchBoardTab('board2')" 
+                  class="px-2.5 py-1 text-xs font-semibold rounded text-zinc-400 hover:text-white transition-colors cursor-pointer">
+                  Board 2
+                </button>
+              </div>
             </div>
 
             <!-- List of GPIO segments with comfortable vertical room -->
@@ -377,7 +396,7 @@
            2. CLASSIC VIEW (100% EXACT SCREENSHOT REPLICA)
            Matches uploaded screenshot media_1794347290800_4f397ac7.jpg
            ======================================================== -->
-    <div id="classic-ui-view" hidden>
+    <div id="classic-ui-view">
 
       <!-- Dashboard Heading -->
       <div class="classic-heading">
@@ -435,7 +454,21 @@
       </div>
 
       <!-- GPIO Controls -->
-      <h3 class="classic-section-title">GPIO Controls</h3>
+      <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <h3 class="classic-section-title" style="margin-bottom: 0;">GPIO Controls</h3>
+
+        <!-- Tab Switcher Device 1 / Device 2 (Classic) -->
+        <div class="flex items-center gap-1 p-1 rounded-lg bg-[#142238] border border-[#293750]">
+          <button type="button" id="classic-tab-board1" onclick="switchBoardTab('board1')" 
+            class="px-3 py-1 text-xs font-bold rounded bg-[#2563eb] text-white border border-[#3b82f6] transition-colors cursor-pointer">
+            Board 1
+          </button>
+          <button type="button" id="classic-tab-board2" onclick="switchBoardTab('board2')" 
+            class="px-3 py-1 text-xs font-bold rounded text-slate-400 hover:text-white transition-colors cursor-pointer">
+            Board 2
+          </button>
+        </div>
+      </div>
 
       <div class="classic-gpio-grid">
 
@@ -590,6 +623,43 @@
       }
     });
 
+    // 2. Board Tab Switcher (Board 1 / Board 2)
+    window.currentBoard = 'board1';
+    function switchBoardTab(boardId) {
+      window.currentBoard = boardId;
+
+      // Update Modern Tab buttons
+      const modernB1 = document.getElementById('tab-board1');
+      const modernB2 = document.getElementById('tab-board2');
+      if (modernB1 && modernB2) {
+        if (boardId === 'board1') {
+          modernB1.className = 'px-2.5 py-1 text-xs font-semibold rounded bg-[#18181b] text-white border border-[#27272a] transition-colors cursor-pointer';
+          modernB2.className = 'px-2.5 py-1 text-xs font-semibold rounded text-zinc-400 hover:text-white transition-colors cursor-pointer';
+        } else {
+          modernB1.className = 'px-2.5 py-1 text-xs font-semibold rounded text-zinc-400 hover:text-white transition-colors cursor-pointer';
+          modernB2.className = 'px-2.5 py-1 text-xs font-semibold rounded bg-[#18181b] text-white border border-[#27272a] transition-colors cursor-pointer';
+        }
+      }
+
+      // Update Classic Tab buttons
+      const classicB1 = document.getElementById('classic-tab-board1');
+      const classicB2 = document.getElementById('classic-tab-board2');
+      if (classicB1 && classicB2) {
+        if (boardId === 'board1') {
+          classicB1.className = 'px-3 py-1 text-xs font-bold rounded bg-[#2563eb] text-white border border-[#3b82f6] transition-colors cursor-pointer';
+          classicB2.className = 'px-3 py-1 text-xs font-bold rounded text-slate-400 hover:text-white transition-colors cursor-pointer';
+        } else {
+          classicB1.className = 'px-3 py-1 text-xs font-bold rounded text-slate-400 hover:text-white transition-colors cursor-pointer';
+          classicB2.className = 'px-3 py-1 text-xs font-bold rounded bg-[#2563eb] text-white border border-[#3b82f6] transition-colors cursor-pointer';
+        }
+      }
+
+      // Notify Firebase engine if loaded
+      if (typeof window.onBoardTabSwitched === 'function') {
+        window.onBoardTabSwitched(boardId);
+      }
+    }
+
     // 2. UI Theme Switcher (Modern vs Classic)
     function applyThemeMode(mode) {
       localStorage.setItem('nevermind_ui_theme', mode);
@@ -603,11 +673,20 @@
       const modernHeader = document.getElementById('modern-header-content');
       const classicHeader = document.getElementById('classic-header-content');
 
+      const classicLoginTitle = document.getElementById('classic-login-title');
+      const modernLoginBrand = document.getElementById('modern-login-brand');
+      const modernLoginBtn = document.getElementById('modern-login-btn-text');
+      const classicLoginBtn = document.getElementById('classic-login-btn-text');
+
       if (mode === 'modern') {
         if (modernView) modernView.hidden = false;
         if (classicView) classicView.hidden = true;
         if (modernHeader) modernHeader.hidden = false;
         if (classicHeader) classicHeader.hidden = true;
+        if (classicLoginTitle) classicLoginTitle.style.display = 'none';
+        if (modernLoginBrand) modernLoginBrand.style.display = 'block';
+        if (modernLoginBtn) modernLoginBtn.style.display = 'inline';
+        if (classicLoginBtn) classicLoginBtn.style.display = 'none';
         setTimeout(function () {
           window.dispatchEvent(new Event('resize'));
         }, 60);
@@ -616,6 +695,10 @@
         if (classicView) classicView.hidden = false;
         if (modernHeader) modernHeader.hidden = true;
         if (classicHeader) classicHeader.hidden = false;
+        if (classicLoginTitle) classicLoginTitle.style.display = 'block';
+        if (modernLoginBrand) modernLoginBrand.style.display = 'none';
+        if (modernLoginBtn) modernLoginBtn.style.display = 'none';
+        if (classicLoginBtn) classicLoginBtn.style.display = 'inline';
       }
 
       document.querySelectorAll('input[name="ui-theme-mode"]').forEach(function (r) {
@@ -644,8 +727,12 @@
       });
     });
 
-    // Initialize UI mode
-    const savedMode = localStorage.getItem('nevermind_ui_theme') || 'modern';
+    // Initialize UI mode: default to 'classic' as requested
+    if (!localStorage.getItem('nevermind_default_classic_v2')) {
+      localStorage.setItem('nevermind_default_classic_v2', 'true');
+      localStorage.setItem('nevermind_ui_theme', 'classic');
+    }
+    const savedMode = localStorage.getItem('nevermind_ui_theme') || 'classic';
     applyThemeMode(savedMode);
 
     // 3. 100% Reliable Toggle Switch Function (Modern & Classic)
