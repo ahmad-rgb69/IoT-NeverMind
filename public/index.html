@@ -1,63 +1,411 @@
 <!doctype html>
-<html lang="id">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ESP32 IoT Control</title>
+<html lang="en" class="dark">
 
-    <link rel="stylesheet" href="style.css" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nevermind ESP32 IoT Dashboard</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  </head>
+  <!-- Clean Modern Web Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <body>
-    <header>
-      <h1>ESP32 IoT Control</h1>
-    </header>
+  <!-- Tailwind CSS v4 -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
-    <!-- LOGIN -->
-    <section id="login-view">
-      <h2>Login</h2>
+  <!-- Chart.js for real-time sensor chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-      <form id="login-form">
-        <input id="email" type="email" placeholder="Email" required />
-        <input id="password" type="password" placeholder="Password" required />
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-        <button type="submit">Login</button>
-        <p id="login-error"></p>
+<body data-theme="modern" class="bg-[#09090b] text-[#f4f4f5] min-h-screen antialiased flex flex-col">
+
+  <!-- TOP NAVIGATION BAR (Adapts between Modern & Classic) -->
+  <header id="main-header" class="sticky top-0 z-50 w-full border-b border-[#27272a] bg-[#09090b]/95 backdrop-blur-md">
+
+    <!-- MODERN HEADER CONTENT -->
+    <div id="modern-header-content"
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <!-- LEFT: Brand Logo & Title -->
+      <div class="flex items-center gap-3">
+        <img src="assets/nevermind-logo.png" alt="Nevermind Logo" class="h-8 w-auto object-contain rounded" />
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm tracking-tight text-[#f4f4f5]">Nevermind</span>
+          <span
+            class="text-xs px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-[#a1a1aa] font-medium hidden sm:inline-block">
+            ESP32 Control Panel
+          </span>
+        </div>
+      </div>
+
+      <!-- CENTER: "Logged in as ..." -->
+      <div id="top-user-banner" class="flex items-center justify-center min-w-0" hidden>
+        <div
+          class="flex items-center gap-2 px-3 py-1 rounded-full bg-[#18181b] border border-[#27272a] text-xs text-[#a1a1aa]">
+          <span class="hidden sm:inline text-zinc-400">Logged in as</span>
+          <strong id="top-user-email"
+            class="text-[#f4f4f5] font-medium truncate max-w-[140px] sm:max-w-[220px]"></strong>
+        </div>
+      </div>
+
+      <!-- RIGHT: Dropdown Trigger (Modern) -->
+      <div class="relative flex items-center">
+        <button type="button" onclick="toggleDropdownMenu(event)" aria-label="Toggle menu"
+          class="p-2 rounded-lg bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] transition-colors cursor-pointer focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CLASSIC HEADER CONTENT (Centered "ESP32 IoT Control" matching screenshot) -->
+    <div id="classic-header-content" class="w-full px-4 sm:px-6 h-16 flex items-center justify-between" hidden>
+      <!-- Left spacer to ensure center alignment -->
+      <div class="w-10"></div>
+
+      <!-- CENTER: Exact Classic Title -->
+      <h1 class="text-xl sm:text-2xl font-bold text-white tracking-wide text-center">
+        ESP32 IoT Control
+      </h1>
+
+      <!-- RIGHT: Dropdown Trigger (Classic) -->
+      <div class="relative flex items-center">
+        <button type="button" onclick="toggleDropdownMenu(event)" aria-label="Toggle menu"
+          class="p-2 rounded-lg bg-[#203653] hover:bg-[#293d59] border border-[#3b5272] text-white transition-colors cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- SHARED DROPDOWN MENU (STRICTLY 2 ITEMS, FIXED z-index: 99999) -->
+    <div id="app-dropdown-menu"
+      class="dropdown-panel fixed sm:absolute right-4 top-16 sm:top-full sm:mt-2 w-72 rounded-xl bg-[#18181b] border border-[#27272a] shadow-2xl p-3 z-[99999]">
+      <!-- ITEM 1: UI Switcher (Modern vs Classic) -->
+      <div class="mb-3">
+        <div class="flex items-center justify-between mb-2 px-1">
+          <span class="text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider">
+            Interface Theme
+          </span>
+          <span id="current-ui-pill"
+            class="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+            MODERN
+          </span>
+        </div>
+
+        <!-- Segmented Radio Group -->
+        <div class="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-[#09090b] border border-[#27272a]">
+          <label
+            class="ui-radio-label flex items-center justify-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors active text-xs font-medium text-white"
+            data-mode="modern">
+            <input type="radio" name="ui-theme-mode" value="modern" class="sr-only" checked />
+            <span class="radio-indicator w-3 h-3 rounded-full border border-zinc-500 flex items-center justify-center">
+              <span class="radio-inner-dot w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </span>
+            <span>Modern</span>
+          </label>
+
+          <label
+            class="ui-radio-label flex items-center justify-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-colors text-xs font-medium text-zinc-400"
+            data-mode="classic">
+            <input type="radio" name="ui-theme-mode" value="classic" class="sr-only" />
+            <span class="radio-indicator w-3 h-3 rounded-full border border-zinc-600 flex items-center justify-center">
+              <span class="radio-inner-dot w-1.5 h-1.5 rounded-full"></span>
+            </span>
+            <span>Classic</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="h-px bg-[#27272a] my-2"></div>
+
+      <!-- ITEM 2: Log Out Button -->
+      <button id="dropdown-logout" type="button" hidden
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        <span>Log Out</span>
+      </button>
+    </div>
+
+  </header>
+
+  <!-- ================= LOGIN VIEW ================= -->
+  <section id="login-view" class="flex-1 flex items-center justify-center p-4 py-12">
+    <div class="w-full max-w-sm p-6 sm:p-8 rounded-xl bg-[#18181b] border border-[#27272a] shadow-xl">
+      <div class="text-center mb-6">
+        <img src="assets/nevermind-logo.png" alt="Nevermind Logo" class="h-10 w-auto mx-auto mb-3 object-contain" />
+        <h2 class="text-lg font-bold text-[#f4f4f5]">Sign in to Dashboard</h2>
+        <p class="text-xs text-[#a1a1aa] mt-1">Manage ESP32 GPIOs and sensors</p>
+      </div>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label for="email" class="block text-xs font-medium text-zinc-300 mb-1.5">
+            Email
+          </label>
+          <input id="email" type="email" placeholder="Email" required
+            class="w-full px-3 py-2 rounded-lg bg-[#09090b] border border-[#27272a] text-sm text-[#f4f4f5] placeholder-zinc-500 outline-none focus:border-zinc-500 transition-colors" />
+        </div>
+
+        <div>
+          <label for="password" class="block text-xs font-medium text-zinc-300 mb-1.5">
+            Password
+          </label>
+          <input id="password" type="password" placeholder="Password" required
+            class="w-full px-3 py-2 rounded-lg bg-[#09090b] border border-[#27272a] text-sm text-[#f4f4f5] placeholder-zinc-500 outline-none focus:border-zinc-500 transition-colors" />
+        </div>
+
+        <button type="submit"
+          class="w-full py-2 px-4 rounded-lg bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-xs tracking-wide uppercase transition-colors cursor-pointer mt-2">
+          Sign In
+        </button>
+
+        <p id="login-error" class="text-center text-xs text-rose-400 min-h-4 pt-1"></p>
       </form>
-    </section>
+    </div>
+  </section>
 
-    <!-- DASHBOARD -->
-    <section id="dashboard" hidden>
-      <div class="dashboard-heading">
+  <!-- ================= DASHBOARD MAIN ================= -->
+  <main id="dashboard" class="flex-1 w-full mx-auto" hidden>
+
+    <!-- ========================================================
+           1. MODERN PRODUCTION VIEW (Industrial / shadcn / Vercel style)
+           ======================================================== -->
+    <div id="modern-ui-view" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+        <!-- LEFT CARD: GPIO Controls -->
+        <section
+          class="rounded-xl bg-[#18181b] border border-[#27272a] p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+
+          <div>
+            <div class="flex items-center justify-between pb-4 mb-5 border-b border-[#27272a]">
+              <div>
+                <h2 class="text-lg font-bold text-[#f4f4f5] tracking-tight">GPIO Controls</h2>
+                <p class="text-xs text-[#a1a1aa] mt-0.5">Toggle digital output channels</p>
+              </div>
+
+            </div>
+
+            <!-- List of GPIO segments with comfortable vertical room -->
+            <div class="space-y-4">
+
+              <!-- GPIO 12 Segment -->
+              <div
+                class="flex items-center justify-between p-4 sm:p-4.5 rounded-lg bg-[#09090b] border border-[#27272a] hover:border-zinc-700 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class="gpio-dot dot-gpio-12 w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors"></span>
+                  <span class="font-semibold text-sm text-[#f4f4f5]">GPIO 12</span>
+                  <span class="text-zinc-600">|</span>
+                  <span class="text-xs text-zinc-400">Status:</span>
+                  <span
+                    class="state-12 text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400">
+                    OFF
+                  </span>
+                </div>
+
+                <label class="switch-container relative inline-flex items-center cursor-pointer select-none">
+                  <input type="checkbox" id="modern-gpio-12" data-gpio="12" class="gpio-checkbox sr-only"
+                    onchange="handleToggleChange(this)" />
+                  <div class="switch-track w-11 h-6 bg-zinc-700 rounded-full transition-colors duration-150 relative">
+                    <div
+                      class="switch-knob w-5 h-5 bg-white rounded-full transition-transform duration-150 transform translate-x-0.5 translate-y-0.5 shadow">
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- GPIO 13 Segment -->
+              <div
+                class="flex items-center justify-between p-4 sm:p-4.5 rounded-lg bg-[#09090b] border border-[#27272a] hover:border-zinc-700 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class="gpio-dot dot-gpio-13 w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors"></span>
+                  <span class="font-semibold text-sm text-[#f4f4f5]">GPIO 13</span>
+                  <span class="text-zinc-600">|</span>
+                  <span class="text-xs text-zinc-400">Status:</span>
+                  <span
+                    class="state-13 text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400">
+                    OFF
+                  </span>
+                </div>
+
+                <label class="switch-container relative inline-flex items-center cursor-pointer select-none">
+                  <input type="checkbox" id="modern-gpio-13" data-gpio="13" class="gpio-checkbox sr-only"
+                    onchange="handleToggleChange(this)" />
+                  <div class="switch-track w-11 h-6 bg-zinc-700 rounded-full transition-colors duration-150 relative">
+                    <div
+                      class="switch-knob w-5 h-5 bg-white rounded-full transition-transform duration-150 transform translate-x-0.5 translate-y-0.5 shadow">
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- GPIO 14 Segment -->
+              <div
+                class="flex items-center justify-between p-4 sm:p-4.5 rounded-lg bg-[#09090b] border border-[#27272a] hover:border-zinc-700 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class="gpio-dot dot-gpio-14 w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors"></span>
+                  <span class="font-semibold text-sm text-[#f4f4f5]">GPIO 14</span>
+                  <span class="text-zinc-600">|</span>
+                  <span class="text-xs text-zinc-400">Status:</span>
+                  <span
+                    class="state-14 text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400">
+                    OFF
+                  </span>
+                </div>
+
+                <label class="switch-container relative inline-flex items-center cursor-pointer select-none">
+                  <input type="checkbox" id="modern-gpio-14" data-gpio="14" class="gpio-checkbox sr-only"
+                    onchange="handleToggleChange(this)" />
+                  <div class="switch-track w-11 h-6 bg-zinc-700 rounded-full transition-colors duration-150 relative">
+                    <div
+                      class="switch-knob w-5 h-5 bg-white rounded-full transition-transform duration-150 transform translate-x-0.5 translate-y-0.5 shadow">
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- GPIO 25 Segment -->
+              <div
+                class="flex items-center justify-between p-4 sm:p-4.5 rounded-lg bg-[#09090b] border border-[#27272a] hover:border-zinc-700 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class="gpio-dot dot-gpio-25 w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors"></span>
+                  <span class="font-semibold text-sm text-[#f4f4f5]">GPIO 25</span>
+                  <span class="text-zinc-600">|</span>
+                  <span class="text-xs text-zinc-400">Status:</span>
+                  <span
+                    class="state-25 text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400">
+                    OFF
+                  </span>
+                </div>
+
+                <label class="switch-container relative inline-flex items-center cursor-pointer select-none">
+                  <input type="checkbox" id="modern-gpio-25" data-gpio="25" class="gpio-checkbox sr-only"
+                    onchange="handleToggleChange(this)" />
+                  <div class="switch-track w-11 h-6 bg-zinc-700 rounded-full transition-colors duration-150 relative">
+                    <div
+                      class="switch-knob w-5 h-5 bg-white rounded-full transition-transform duration-150 transform translate-x-0.5 translate-y-0.5 shadow">
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+            </div>
+          </div>
+
+
+        </section>
+
+        <!-- RIGHT CARD: Sensor Monitors (Organized in Modular Segments Stacking Downwards) -->
+        <section class="rounded-xl bg-[#18181b] border border-[#27272a] p-5 sm:p-6 shadow-sm">
+
+          <div class="flex items-center justify-between pb-4 mb-5 border-b border-[#27272a]">
+            <div>
+              <h2 class="text-lg font-bold text-[#f4f4f5] tracking-tight">Sensor Monitors</h2>
+              <p class="text-xs text-[#a1a1aa] mt-0.5">Telemetry & Sensor Channel Segments</p>
+            </div>
+
+          </div>
+
+          <!-- Modular Sensor Segments Stacking Downwards -->
+          <div class="space-y-4">
+
+            <!-- SEGMENT 1: DHT22 Sensor (Temperature & Humidity) -->
+            <div
+              class="rounded-lg bg-[#09090b] border border-[#27272a] p-4 sm:p-4.5 hover:border-zinc-700 transition-colors">
+
+              <!-- Segment Header -->
+              <div class="flex items-center justify-between pb-3 mb-3 border-b border-[#27272a]">
+                <div class="flex items-center gap-2.5">
+                  <span class="font-semibold text-sm text-[#f4f4f5]">DHT22 Sensor</span>
+                  <span
+                    class="text-[11px] px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400 font-medium">
+                    PIN 4
+                  </span>
+                </div>
+
+              </div>
+
+              <!-- Metrics Grid for DHT22 -->
+              <div class="grid grid-cols-2 gap-3 mb-3.5">
+                <div class="p-3 rounded-md bg-[#18181b] border border-[#27272a]">
+                  <span class="text-[11px] font-medium text-[#a1a1aa] block mb-0.5">Temperature</span>
+                  <div class="flex items-baseline gap-1">
+                    <span id="modern-suhu-val" class="text-2xl font-bold text-[#f4f4f5] tracking-tight">--.-</span>
+                    <span class="text-xs font-medium text-zinc-400">°C</span>
+                  </div>
+                </div>
+
+                <div class="p-3 rounded-md bg-[#18181b] border border-[#27272a]">
+                  <span class="text-[11px] font-medium text-[#a1a1aa] block mb-0.5">Humidity</span>
+                  <div class="flex items-baseline gap-1">
+                    <span id="modern-kelembapan-val"
+                      class="text-2xl font-bold text-[#f4f4f5] tracking-tight">--.-</span>
+                    <span class="text-xs font-medium text-zinc-400">%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Integrated Real-time Chart for DHT22 -->
+              <div class="rounded-md bg-[#18181b] border border-[#27272a] p-2.5">
+                <div class="h-36 sm:h-40 w-full relative">
+                  <canvas id="dhtChart" class="w-full h-full"></canvas>
+                </div>
+              </div>
+
+            </div>
+
+
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================
+           2. CLASSIC VIEW (100% EXACT SCREENSHOT REPLICA)
+           Matches uploaded screenshot media_1794347290800_4f397ac7.jpg
+           ======================================================== -->
+    <div id="classic-ui-view" hidden>
+
+      <!-- Dashboard Heading -->
+      <div class="classic-heading">
         <div>
           <h2>Dashboard</h2>
           <p>Monitor and control your ESP32 device.</p>
         </div>
-
-        <button id="logout">Logout</button>
+        <button id="logout" class="classic-logout-btn">Logout</button>
       </div>
 
-      <!-- USER INFO -->
-      <div class="user-info">
+      <!-- User Info -->
+      <div class="classic-user-info">
         <span>Logged in as:</span>
         <strong id="user-email"></strong>
       </div>
 
-      <!-- DEVICE OVERVIEW -->
-      <div class="device-overview">
-        <div class="overview-card">
-          <span class="overview-icon">⚡</span>
+      <!-- Device Overview -->
+      <div class="classic-device-overview">
+        <div class="classic-overview-card">
+          <span class="classic-overview-icon">⚡</span>
           <div>
             <h3>ESP32</h3>
             <p>IoT Controller</p>
           </div>
         </div>
 
-        <div class="overview-card">
-          <span class="overview-icon">🔌</span>
+        <div class="classic-overview-card">
+          <span class="classic-overview-icon">🔌</span>
           <div>
             <h3>4 GPIO</h3>
             <p>Available Channels</p>
@@ -65,154 +413,466 @@
         </div>
       </div>
 
-      <!-- MONITORING SENSOR DHT22 -->
-      <h3 class="section-title" style="margin-top: 2rem;">Monitoring Sensor</h3>
-      <div class="grid" style="margin-bottom: 2rem;">
-        <article class="card">
-          <div class="card-heading">
+      <!-- Monitoring Sensor DHT22 -->
+      <h3 class="classic-section-title">Monitoring Sensor</h3>
+      <div style="margin-bottom: 2rem;">
+        <article class="classic-card">
+          <div class="classic-card-heading">
             <h3>DHT22</h3>
-            <span class="gpio-number">PIN 4</span>
+            <span class="classic-gpio-number">PIN 4</span>
           </div>
 
           <div class="flex justify-between items-center mt-7">
-            <span class="status-label">🌡️ Suhu:</span>
-            <span class="font-bold text-emerald-400"><span id="suhu-val">0</span> °C</span>
+            <span class="classic-status-label">🌡️ Suhu:</span>
+            <span class="font-bold text-emerald-400 text-sm sm:text-base"><span id="suhu-val">0</span> °C</span>
           </div>
 
           <div class="flex justify-between items-center mt-5">
-            <span class="status-label">💧 Kelembapan:</span>
-            <span class="font-bold text-blue-400"><span id="kelembapan-val">0</span> %</span>
+            <span class="classic-status-label">💧 Kelembapan:</span>
+            <span class="font-bold text-blue-400 text-sm sm:text-base"><span id="kelembapan-val">0</span> %</span>
           </div>
         </article>
       </div>
 
-      <!-- GPIO CONTROLS -->
-      <h3 class="section-title">GPIO Controls</h3>
+      <!-- GPIO Controls -->
+      <h3 class="classic-section-title">GPIO Controls</h3>
 
-      <div class="grid">
+      <div class="classic-gpio-grid">
+
         <!-- GPIO 12 -->
-        <article class="card">
-          <div class="card-heading">
+        <article class="classic-card">
+          <div class="classic-card-heading">
             <h3>GPIO 12</h3>
-            <span class="gpio-number">PIN 12</span>
+            <span class="classic-gpio-number">PIN 12</span>
           </div>
 
           <div class="flex justify-between items-center mt-7">
-            <span class="status-label">Status:</span>
-            <span id="state-12" class="font-bold text-slate-400">OFF</span>
+            <span class="classic-status-label">Status:</span>
+            <span id="state-12" class="state-12 font-bold text-slate-400">OFF</span>
           </div>
 
           <div class="flex justify-between items-center mt-5">
             <span class="text-sm text-slate-400">Power Control</span>
 
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="gpio-12-toggle"
-                data-gpio="12"
-                class="sr-only peer"
-              />
-
-              <div
-                class="w-14 h-8 bg-slate-600 rounded-full peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-transform peer-checked:after:translate-x-6"
-              ></div>
+            <label class="classic-switch-container relative inline-flex items-center cursor-pointer select-none">
+              <input type="checkbox" id="gpio-12-toggle" data-gpio="12" class="classic-gpio-checkbox sr-only"
+                onchange="handleToggleChange(this)" />
+              <div class="classic-switch-track w-14 h-8 bg-slate-600 rounded-full transition-colors relative">
+                <div
+                  class="classic-switch-knob w-6 h-6 bg-white rounded-full transition-transform transform translate-x-1 translate-y-1 shadow">
+                </div>
+              </div>
             </label>
           </div>
         </article>
 
         <!-- GPIO 13 -->
-        <article class="card">
-          <div class="card-heading">
+        <article class="classic-card">
+          <div class="classic-card-heading">
             <h3>GPIO 13</h3>
-            <span class="gpio-number">PIN 13</span>
+            <span class="classic-gpio-number">PIN 13</span>
           </div>
 
           <div class="flex justify-between items-center mt-7">
-            <span class="status-label">Status:</span>
-            <span id="state-13" class="font-bold text-slate-400">OFF</span>
+            <span class="classic-status-label">Status:</span>
+            <span id="state-13" class="state-13 font-bold text-slate-400">OFF</span>
           </div>
 
           <div class="flex justify-between items-center mt-5">
             <span class="text-sm text-slate-400">Power Control</span>
 
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="gpio-13-toggle"
-                data-gpio="13"
-                class="sr-only peer"
-              />
-
-              <div
-                class="w-14 h-8 bg-slate-600 rounded-full peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-transform peer-checked:after:translate-x-6"
-              ></div>
+            <label class="classic-switch-container relative inline-flex items-center cursor-pointer select-none">
+              <input type="checkbox" id="gpio-13-toggle" data-gpio="13" class="classic-gpio-checkbox sr-only"
+                onchange="handleToggleChange(this)" />
+              <div class="classic-switch-track w-14 h-8 bg-slate-600 rounded-full transition-colors relative">
+                <div
+                  class="classic-switch-knob w-6 h-6 bg-white rounded-full transition-transform transform translate-x-1 translate-y-1 shadow">
+                </div>
+              </div>
             </label>
           </div>
         </article>
 
         <!-- GPIO 14 -->
-        <article class="card">
-          <div class="card-heading">
+        <article class="classic-card">
+          <div class="classic-card-heading">
             <h3>GPIO 14</h3>
-            <span class="gpio-number">PIN 14</span>
+            <span class="classic-gpio-number">PIN 14</span>
           </div>
 
           <div class="flex justify-between items-center mt-7">
-            <span class="status-label">Status:</span>
-            <span id="state-14" class="font-bold text-slate-400">OFF</span>
+            <span class="classic-status-label">Status:</span>
+            <span id="state-14" class="state-14 font-bold text-slate-400">OFF</span>
           </div>
 
           <div class="flex justify-between items-center mt-5">
             <span class="text-sm text-slate-400">Power Control</span>
 
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="gpio-14-toggle"
-                data-gpio="14"
-                class="sr-only peer"
-              />
-
-              <div
-                class="w-14 h-8 bg-slate-600 rounded-full peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-transform peer-checked:after:translate-x-6"
-              ></div>
+            <label class="classic-switch-container relative inline-flex items-center cursor-pointer select-none">
+              <input type="checkbox" id="gpio-14-toggle" data-gpio="14" class="classic-gpio-checkbox sr-only"
+                onchange="handleToggleChange(this)" />
+              <div class="classic-switch-track w-14 h-8 bg-slate-600 rounded-full transition-colors relative">
+                <div
+                  class="classic-switch-knob w-6 h-6 bg-white rounded-full transition-transform transform translate-x-1 translate-y-1 shadow">
+                </div>
+              </div>
             </label>
           </div>
         </article>
 
         <!-- GPIO 25 -->
-        <article class="card">
-          <div class="card-heading">
+        <article class="classic-card">
+          <div class="classic-card-heading">
             <h3>GPIO 25</h3>
-            <span class="gpio-number">PIN 25</span>
+            <span class="classic-gpio-number">PIN 25</span>
           </div>
 
           <div class="flex justify-between items-center mt-7">
-            <span class="status-label">Status:</span>
-            <span id="state-25" class="font-bold text-slate-400">OFF</span>
+            <span class="classic-status-label">Status:</span>
+            <span id="state-25" class="state-25 font-bold text-slate-400">OFF</span>
           </div>
 
           <div class="flex justify-between items-center mt-5">
             <span class="text-sm text-slate-400">Power Control</span>
 
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="gpio-25-toggle"
-                data-gpio="25"
-                class="sr-only peer"
-              />
-
-              <div
-                class="w-14 h-8 bg-slate-600 rounded-full peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-transform peer-checked:after:translate-x-6"
-              ></div>
+            <label class="classic-switch-container relative inline-flex items-center cursor-pointer select-none">
+              <input type="checkbox" id="gpio-25-toggle" data-gpio="25" class="classic-gpio-checkbox sr-only"
+                onchange="handleToggleChange(this)" />
+              <div class="classic-switch-track w-14 h-8 bg-slate-600 rounded-full transition-colors relative">
+                <div
+                  class="classic-switch-knob w-6 h-6 bg-white rounded-full transition-transform transform translate-x-1 translate-y-1 shadow">
+                </div>
+              </div>
             </label>
           </div>
         </article>
-      </div>
-    </section>
 
-    <!-- FIREBASE JAVASCRIPT -->
-    <script type="module" src="scripts/index.js"></script>
-  </body>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================
+         STANDALONE RELIABLE CLIENT SCRIPT
+         100% Guaranteed to work on file://, offline, or localhost!
+         ======================================================== -->
+  <script>
+    // 1. Dropdown Toggle (Fixed z-index: 99999, floats over all elements)
+    function toggleDropdownMenu(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const menu = document.getElementById('app-dropdown-menu');
+      if (menu) {
+        menu.classList.toggle('active');
+      }
+    }
+
+    document.addEventListener('click', function (e) {
+      const menu = document.getElementById('app-dropdown-menu');
+      if (menu && menu.classList.contains('active')) {
+        const btn1 = document.getElementById('modern-header-content');
+        const btn2 = document.getElementById('classic-header-content');
+        if (!menu.contains(e.target)) {
+          menu.classList.remove('active');
+        }
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        const menu = document.getElementById('app-dropdown-menu');
+        if (menu && menu.classList.contains('active')) {
+          menu.classList.remove('active');
+        }
+      }
+    });
+
+    // 2. UI Theme Switcher (Modern vs Classic)
+    function applyThemeMode(mode) {
+      localStorage.setItem('nevermind_ui_theme', mode);
+      document.body.setAttribute('data-theme', mode);
+
+      const pill = document.getElementById('current-ui-pill');
+      if (pill) pill.textContent = mode.toUpperCase();
+
+      const modernView = document.getElementById('modern-ui-view');
+      const classicView = document.getElementById('classic-ui-view');
+      const modernHeader = document.getElementById('modern-header-content');
+      const classicHeader = document.getElementById('classic-header-content');
+
+      if (mode === 'modern') {
+        if (modernView) modernView.hidden = false;
+        if (classicView) classicView.hidden = true;
+        if (modernHeader) modernHeader.hidden = false;
+        if (classicHeader) classicHeader.hidden = true;
+        setTimeout(function () {
+          window.dispatchEvent(new Event('resize'));
+        }, 60);
+      } else {
+        if (modernView) modernView.hidden = true;
+        if (classicView) classicView.hidden = false;
+        if (modernHeader) modernHeader.hidden = true;
+        if (classicHeader) classicHeader.hidden = false;
+      }
+
+      document.querySelectorAll('input[name="ui-theme-mode"]').forEach(function (r) {
+        r.checked = (r.value === mode);
+        const label = r.closest('.ui-radio-label');
+        if (label) {
+          label.classList.toggle('active', r.value === mode);
+          label.classList.toggle('text-white', r.value === mode);
+          label.classList.toggle('text-zinc-400', r.value !== mode);
+          const dot = label.querySelector('.radio-inner-dot');
+          if (dot) dot.classList.toggle('bg-emerald-500', r.value === mode);
+        }
+      });
+    }
+
+    document.querySelectorAll('.ui-radio-label').forEach(function (label) {
+      label.addEventListener('click', function () {
+        const mode = label.getAttribute('data-mode');
+        if (mode) applyThemeMode(mode);
+      });
+    });
+
+    document.querySelectorAll('input[name="ui-theme-mode"]').forEach(function (r) {
+      r.addEventListener('change', function (e) {
+        applyThemeMode(e.target.value);
+      });
+    });
+
+    // Initialize UI mode
+    const savedMode = localStorage.getItem('nevermind_ui_theme') || 'modern';
+    applyThemeMode(savedMode);
+
+    // 3. 100% Reliable Toggle Switch Function (Modern & Classic)
+    function handleToggleChange(input) {
+      const pin = input.getAttribute('data-gpio');
+      const isOn = input.checked;
+
+      // Synchronize all inputs matching this pin (Modern & Classic)
+      document.querySelectorAll('input[data-gpio="' + pin + '"]').forEach(function (el) {
+        el.checked = isOn;
+      });
+
+      // Update status text badges in Modern and Classic
+      document.querySelectorAll('.state-' + pin).forEach(function (el) {
+        el.textContent = isOn ? 'ON' : 'OFF';
+        if (document.body.getAttribute('data-theme') === 'classic') {
+          el.className = 'state-' + pin + ' font-bold ' + (isOn ? 'text-emerald-400' : 'text-slate-400');
+        } else {
+          if (isOn) {
+            el.className = 'state-' + pin + ' text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400';
+          } else {
+            el.className = 'state-' + pin + ' text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400';
+          }
+        }
+      });
+
+      // Update dot indicator in Modern view
+      document.querySelectorAll('.dot-gpio-' + pin).forEach(function (dot) {
+        if (isOn) {
+          dot.className = 'gpio-dot dot-gpio-' + pin + ' w-2.5 h-2.5 rounded-full bg-emerald-500 transition-colors';
+        } else {
+          dot.className = 'gpio-dot dot-gpio-' + pin + ' w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors';
+        }
+      });
+    }
+
+    // 4. Dropdown menu close handler
+    const dropdownLogoutBtn = document.getElementById('dropdown-logout');
+    if (dropdownLogoutBtn) {
+      dropdownLogoutBtn.addEventListener('click', function () {
+        const menu = document.getElementById('app-dropdown-menu');
+        if (menu) menu.classList.remove('active');
+      });
+    }
+
+    // 5. Clean, Minimalist Production Real-Time Chart
+    (function () {
+      let chartInstance = null;
+      const maxPoints = 20;
+      const labels = [];
+      const tempData = [];
+      const humData = [];
+
+      const canvas = document.getElementById('dhtChart');
+      if (!canvas) return;
+
+      function drawPureCanvasFallback() {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const w = canvas.width = canvas.parentElement.clientWidth;
+        const h = canvas.height = canvas.parentElement.clientHeight || 160;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Grid lines
+        ctx.strokeStyle = '#27272a';
+        ctx.lineWidth = 1;
+        for (let y = 25; y < h; y += 35) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+
+        if (tempData.length === 0) {
+          ctx.fillStyle = '#71717a';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Menunggu telemetri data ESP32...', w / 2, h / 2);
+          return;
+        }
+
+        // Temp Line (Emerald Green)
+        ctx.beginPath();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        tempData.forEach((val, idx) => {
+          if (val === null) return;
+          const x = (idx / Math.max(1, tempData.length - 1)) * (w - 20) + 10;
+          const y = h - ((val - 20) / 20) * (h - 30) - 15;
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        // Hum Line (Blue)
+        ctx.beginPath();
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2;
+        humData.forEach((val, idx) => {
+          if (val === null) return;
+          const x = (idx / Math.max(1, humData.length - 1)) * (w - 20) + 10;
+          const y = h - ((val - 30) / 70) * (h - 30) - 15;
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+
+      if (window.Chart) {
+        const ctx = canvas.getContext('2d');
+        chartInstance = new window.Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Temp (°C)',
+                data: tempData,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true,
+                pointRadius: 2,
+                pointBackgroundColor: '#10b981',
+                yAxisID: 'yTemp'
+              },
+              {
+                label: 'Humidity (%)',
+                data: humData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true,
+                pointRadius: 2,
+                pointBackgroundColor: '#3b82f6',
+                yAxisID: 'yHum'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 200 },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                align: 'end',
+                labels: {
+                  color: '#a1a1aa',
+                  font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                  usePointStyle: true,
+                  boxWidth: 6
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: '#27272a' },
+                ticks: { color: '#71717a', font: { family: 'Inter, sans-serif', size: 9 }, maxRotation: 0 }
+              },
+              yTemp: {
+                type: 'linear',
+                position: 'left',
+                grid: { color: '#27272a' },
+                ticks: { color: '#10b981', font: { family: 'Inter, sans-serif', size: 10 }, callback: v => v + '°' },
+                suggestedMin: 20,
+                suggestedMax: 40
+              },
+              yHum: {
+                type: 'linear',
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: { color: '#3b82f6', font: { family: 'Inter, sans-serif', size: 10 }, callback: v => v + '%' },
+                suggestedMin: 40,
+                suggestedMax: 90
+              }
+            }
+          }
+        });
+      } else {
+        drawPureCanvasFallback();
+        window.addEventListener('resize', drawPureCanvasFallback);
+      }
+
+      window.updateSensorTelemetry = function (newTemp, newHum) {
+        if (newTemp === null && newHum === null) return;
+        const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (labels.length >= maxPoints) {
+          labels.shift();
+          tempData.shift();
+          humData.shift();
+        }
+        labels.push(t);
+        tempData.push(newTemp !== null ? Number(newTemp) : (tempData.length > 0 ? tempData[tempData.length - 1] : 0));
+        humData.push(newHum !== null ? Number(newHum) : (humData.length > 0 ? humData[humData.length - 1] : 0));
+
+        if (chartInstance) {
+          chartInstance.update();
+        } else {
+          drawPureCanvasFallback();
+        }
+
+        if (newTemp !== null) {
+          const tStr = Number(newTemp).toFixed(1);
+          const mSuhu = document.getElementById('modern-suhu-val');
+          const cSuhu = document.getElementById('suhu-val');
+          if (mSuhu) mSuhu.innerText = tStr;
+          if (cSuhu) cSuhu.innerText = tStr;
+        }
+
+        if (newHum !== null) {
+          const hStr = Number(newHum).toFixed(1);
+          const mHum = document.getElementById('modern-kelembapan-val');
+          const cHum = document.getElementById('kelembapan-val');
+          if (mHum) mHum.innerText = hStr;
+          if (cHum) cHum.innerText = hStr;
+        }
+      };
+    })();
+  </script>
+
+  <!-- FIREBASE REALTIME ENGINE -->
+  <script type="module" src="scripts/index.js"></script>
+</body>
+
 </html>

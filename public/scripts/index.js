@@ -34,13 +34,18 @@ const database = getDatabase(app);
 const loginView = document.getElementById("login-view");
 const dashboardView = document.getElementById("dashboard");
 const userEmailSpan = document.getElementById("user-email");
+const topUserEmailSpan = document.getElementById("top-user-email");
+const topUserBanner = document.getElementById("top-user-banner");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const logoutBtn = document.getElementById("logout");
+const dropdownLogoutBtn = document.getElementById("dropdown-logout");
 
 // Elemen DOM untuk Sensor DHT22
 const suhuVal = document.getElementById("suhu-val");
 const kelembapanVal = document.getElementById("kelembapan-val");
+const modernSuhuVal = document.getElementById("modern-suhu-val");
+const modernKelembapanVal = document.getElementById("modern-kelembapan-val");
 
 // Path Database untuk GPIO 12, 13, 14, dan 25
 const gpioPins = ["12", "13", "14", "25"];
@@ -77,62 +82,109 @@ const setupUI = (user) => {
   if (user) {
     loginView.hidden = true;
     dashboardView.hidden = false;
-    userEmailSpan.textContent = user.email;
+    if (userEmailSpan) userEmailSpan.textContent = user.email;
+    if (topUserEmailSpan) topUserEmailSpan.textContent = user.email;
+    if (topUserBanner) topUserBanner.hidden = false;
+    if (dropdownLogoutBtn) dropdownLogoutBtn.hidden = false;
 
     // Mendengarkan perubahan status GPIO secara realtime
     gpioPins.forEach((pin) => {
-      const stateSpan = document.getElementById(`state-${pin}`);
-      const toggle = document.querySelector(`input[data-gpio="${pin}"]`);
-
       onValue(dbRefs[pin], (snap) => {
         const isOn = snap.val() === 1;
 
-        if (stateSpan && toggle) {
-          stateSpan.textContent = isOn ? "ON" : "OFF";
-          stateSpan.classList.toggle("text-emerald-400", isOn);
-          stateSpan.classList.toggle("text-slate-400", !isOn);
+        // Sinkronisasi status checkbox (Modern & Classic)
+        document.querySelectorAll(`input[data-gpio="${pin}"]`).forEach((toggle) => {
           toggle.checked = isOn;
-        }
+        });
+
+        // Sinkronisasi badge teks ON / OFF
+        document.querySelectorAll(`.state-${pin}`).forEach((el) => {
+          el.textContent = isOn ? "ON" : "OFF";
+          if (document.body.getAttribute("data-theme") === "classic") {
+            el.className = `state-${pin} font-bold ${isOn ? "text-emerald-400" : "text-slate-400"}`;
+          } else {
+            if (isOn) {
+              el.className = `state-${pin} text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400`;
+            } else {
+              el.className = `state-${pin} text-xs font-semibold px-2 py-0.5 rounded bg-[#18181b] border border-[#27272a] text-zinc-400`;
+            }
+          }
+        });
+
+        // Sinkronisasi indikator dot GPIO Modern
+        document.querySelectorAll(`.dot-gpio-${pin}`).forEach((dot) => {
+          if (isOn) {
+            dot.className = `gpio-dot dot-gpio-${pin} w-2.5 h-2.5 rounded-full bg-emerald-500 transition-colors`;
+          } else {
+            dot.className = `gpio-dot dot-gpio-${pin} w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors`;
+          }
+        });
       });
     });
 
     // Mendengarkan perubahan data Sensor secara realtime
+    let currentTemp = null;
+    let currentHum = null;
+
     onValue(tempRef, (snap) => {
       const suhu = snap.val();
-      if (suhu !== null && suhuVal) {
-        suhuVal.innerText = suhu.toFixed(1);
+      if (suhu !== null) {
+        currentTemp = Number(suhu);
+        const formatted = currentTemp.toFixed(1);
+        if (suhuVal) suhuVal.innerText = formatted;
+        if (modernSuhuVal) modernSuhuVal.innerText = formatted;
+        if (typeof window.updateSensorTelemetry === "function") {
+          window.updateSensorTelemetry(currentTemp, currentHum);
+        }
       }
     });
 
     onValue(humRef, (snap) => {
       const kelembapan = snap.val();
-      if (kelembapan !== null && kelembapanVal) {
-        kelembapanVal.innerText = kelembapan.toFixed(1);
+      if (kelembapan !== null) {
+        currentHum = Number(kelembapan);
+        const formatted = currentHum.toFixed(1);
+        if (kelembapanVal) kelembapanVal.innerText = formatted;
+        if (modernKelembapanVal) modernKelembapanVal.innerText = formatted;
+        if (typeof window.updateSensorTelemetry === "function") {
+          window.updateSensorTelemetry(currentTemp, currentHum);
+        }
       }
     });
   } else {
     loginView.hidden = false;
     dashboardView.hidden = true;
-    userEmailSpan.textContent = "";
+    if (userEmailSpan) userEmailSpan.textContent = "";
+    if (topUserEmailSpan) topUserEmailSpan.textContent = "";
+    if (topUserBanner) topUserBanner.hidden = true;
+    if (dropdownLogoutBtn) dropdownLogoutBtn.hidden = true;
   }
 };
 
 onAuthStateChanged(auth, (user) => setupUI(user));
 
 // Proses Login & Logout
-loginForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  loginError.textContent = "";
+if (loginForm) {
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    if (loginError) loginError.textContent = "";
 
-  signInWithEmailAndPassword(auth, email, password)
-    .then(() => loginForm.reset())
-    .catch((err) => {
-      loginError.textContent = "Login gagal: " + err.message;
-    });
-});
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => loginForm.reset())
+      .catch((err) => {
+        if (loginError) loginError.textContent = "Login gagal: " + err.message;
+      });
+  });
+}
 
-logoutBtn.addEventListener("click", () => signOut(auth));
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => signOut(auth));
+}
+
+if (dropdownLogoutBtn) {
+  dropdownLogoutBtn.addEventListener("click", () => signOut(auth));
+}
 
 export { auth, setupUI };
